@@ -1,20 +1,20 @@
 //
-// Created by songyucheng on 18-11-1.
+// Created by egguncle on 2019/4/12.
 //
 
 
-#include <sys/ioctl.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <fcntl.h>
+#include <memory.h>
+#include <errno.h>
+#include "include/log.h"
 #include "include/elf_util.h"
-#include "include/bind_hook_utils.h"
 
-
-FILE *open_elf_file(char *library_path) {
-    if (library_path != NULL) {
-        LOGD("open lib %s\n", library_path);
-        FILE *fp = fopen(library_path, "rb");
+FILE *open_elf(char *path) {
+    if (path != NULL) {
+        LOGD("open lib %s\n", path);
+        FILE *fp = fopen(path, "rb");
         if (fp == NULL) {
             LOGD("opendir: %s\n", strerror(errno));
         }
@@ -23,14 +23,14 @@ FILE *open_elf_file(char *library_path) {
     return NULL;
 }
 
-void close_elf_file(FILE *elf_file) {
-    if (elf_file != NULL) {
+void close_elf(FILE *file) {
+    if (file != NULL) {
         printf("Close ELF file\n");
-        fclose(elf_file);
+        fclose(file);
     }
 }
 
-void get_elf_header(Elf_Ehdr *elf_header, FILE *elf_file) {
+void parse_elf_header(Elf_Ehdr *elf_header, FILE *elf_file) {
     if (elf_header == NULL || elf_file == NULL) {
         LOGD("elf_header is null or elf_file is null");
         return;
@@ -39,29 +39,22 @@ void get_elf_header(Elf_Ehdr *elf_header, FILE *elf_file) {
     fread(elf_header, sizeof(Elf_Ehdr), 1, elf_file);
 }
 
-char *get_shstrtab_content(FILE *elf_file, Elf_Ehdr *elf_header) {
+char *parse_shstrtab_content(FILE *elf_file, Elf_Ehdr *elf_header) {
     off_t shstrtab_header_offset =
             elf_header->e_shoff + elf_header->e_shstrndx * sizeof(Elf_Ehdr);
-    LOGD("elf e_shstrndx offset is %lx \n", shstrtab_header_offset);
     Elf_Shdr *shstrtab_header = (Elf_Shdr *) malloc(sizeof(Elf_Shdr));
     fseek(elf_file, shstrtab_header_offset, SEEK_SET);
     fread(shstrtab_header, sizeof(Elf_Shdr), 1, elf_file);
     Elf_Xword sh_size = shstrtab_header->sh_size;
-    LOGD("shstrndx size is %d \n", sh_size);
     char *shstrtab_content = (char *) malloc(sh_size * sizeof(char));
     off_t shstrtab_base_offset = shstrtab_header->sh_offset;
-    LOGD("shstrndx shstrtab_base_offset is %lx \n", shstrtab_base_offset);
     fseek(elf_file, shstrtab_base_offset, SEEK_SET);
     fread(shstrtab_content, sh_size, 1, elf_file);
-    LOGD("%s\n", shstrtab_content + shstrtab_header->sh_name);
-    LOGD("--------------\n");
     return shstrtab_content;
 }
 
-
-Elf_Shdr *
-get_target_table_data(char *shstrtab_content, FILE *elf_file, Elf_Ehdr *elf_header,
-                      char *target_tab_name) {
+Elf_Shdr *parse_target_table_data(char *shstrtab_content, FILE *elf_file, Elf_Ehdr *elf_header,
+                                  char *target_tab_name) {
     off_t base_offset = elf_header->e_shoff;
     Elf_Half e_shnum = elf_header->e_shnum;
     Elf_Shdr *tmp_header = (Elf_Shdr *) malloc(sizeof(Elf_Shdr));
@@ -78,3 +71,43 @@ get_target_table_data(char *shstrtab_content, FILE *elf_file, Elf_Ehdr *elf_head
     return tmp_header;
 }
 
+long get_libs_addr(pid_t pid, char *lib_name) {
+    char mapsPath[32];
+    long addr = 0;
+    if (pid < 0) {
+        sprintf(mapsPath, "/proc/self/maps");
+    } else {
+        sprintf(mapsPath, "/proc/%d/maps", pid);
+    }
+    FILE *maps = fopen(mapsPath, "r");
+    char str_line[1024];
+    //  printf("%s", mapsPath);
+    while (!feof(maps)) {
+        fgets(str_line, 1024, maps);
+        if (strstr(str_line, lib_name) != NULL) {
+            fclose(maps);
+            addr = strtoul(strtok(str_line, "-"), NULL, 16);
+            //LOGI("%lx\n", addr);
+            if (addr == 0x8000)
+                addr = 0;
+            break;
+        }
+    }
+    fclose(maps);
+    return addr;
+}
+
+long get_segment_base_address(int fd, long base_addr, int phnum, size_t phsize,
+                               unsigned long phdr_addr) {
+    if (phnum > 0) {
+        Elf_Phdr phdr;
+        lseek(fd, phdr_addr, SEEK_SET);//将指针移至程序头表偏移地址
+        for (Elf_Half i = 0; i < phnum; i++) {
+            read(fd, &phdr, phsize);
+            if (phdr.p_type == PT_LOAD)
+                break;
+        }
+        return base_addr + phdr.p_offset - phdr.p_vaddr;
+    }
+    return 0;
+}

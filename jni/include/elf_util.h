@@ -1,16 +1,5 @@
 #include <stdio.h>
 #include <elf.h>
-#include <string.h>
-#include <sys/types.h>
-#include <dirent.h>
-#include <dlfcn.h>
-#include <errno.h>
-#include <malloc.h>
-#include <sys/mman.h>
-#include <sys/user.h>
-#include<android/log.h>
-#include "binder_hook.h"
-
 
 #if defined(__arm__)
 #define Elf_Ehdr Elf32_Ehdr
@@ -37,13 +26,19 @@
 #define PAGE_START(addr) ((addr) & PAGE_MASK)
 #define PAGE_END(addr)   (PAGE_START(addr) + PAGE_SIZE)
 
-FILE *open_elf_file(char *library_path);
 
-void close_elf_file(FILE *elf_file);
+FILE *open_elf(char *path);
 
-void get_elf_header(Elf_Ehdr *elf_header, FILE *elf_file);
+void close_elf(FILE *file);
 
-char *get_shstrtab_content(FILE *elf_file, Elf_Ehdr *elf_header);
+void parse_elf_header(Elf_Ehdr *elf_header, FILE *elf_file);
 
-Elf_Shdr *get_target_table_data(char *shstrtab_content, FILE *elf_file, Elf_Ehdr *elf_header,
-                                char *target_tab_name);
+char *parse_shstrtab_content(FILE *elf_file, Elf_Ehdr *elf_header);
+
+Elf_Shdr *parse_target_table_data(char *shstrtab_content, FILE *elf_file, Elf_Ehdr *elf_header,
+                                  char *target_tab_name);
+
+long get_segment_base_address(int fd, long base_addr, int phnum, size_t phsize,
+                               unsigned long phdr_addr);
+
+long get_libs_addr(pid_t pid, char *lib_name);
