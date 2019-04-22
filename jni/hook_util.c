@@ -45,6 +45,11 @@ int new_ioctl(int __fd, unsigned long int __request, void *arg) {
                         parse_binder_data(pdata);
                     }
                         break;
+                    case BR_TRANSACTION_COMPLETE: {
+                        LOGE("read BR_TRANSACTION_COMPLETE");
+                        parse_binder_data(pdata);
+                    }
+                        break;
                     default:
                         break;
                 }
@@ -105,7 +110,7 @@ int got_hook(char *path, char *target_func_name, int *old_func, void *new_func) 
     int phnum = elf_header->e_phnum;//程序头表表项数目
     size_t phsize = elf_header->e_phentsize;//程序头表项的大小
     long bias = get_segment_base_address(fd, target_lib_base_addr, phnum, phsize,
-                                          phdr_addr);//获得该段的内存基址
+                                         phdr_addr);//获得该段的内存基址
     LOGD("target segment base address is %lx\n", bias);
     //read shstrtab content
     char *shstrtab_content = parse_shstrtab_content(elf_file, elf_header);
@@ -132,14 +137,15 @@ int got_hook(char *path, char *target_func_name, int *old_func, void *new_func) 
     fread(rela_plt_tab, rela_plt_header->sh_size, 1, elf_file);
     LOGD("rela_plt size %llx\n",
          rela_plt_header->sh_size / rela_plt_header->sh_entsize);
-         LOGD("rela_plt en size %ld   sizeof elf rel %ld\n",rela_plt_header->sh_entsize,sizeof(Elf64_Rel));
+    LOGD("rela_plt en size %ld   sizeof elf rel %ld\n", rela_plt_header->sh_entsize,
+         sizeof(Elf64_Rel));
     int success = 0;
 
     LOGD("ioctl addr is %lx\n", ioctl);
     LOGD("dynstr sh_size : %llx \n sh_entsize : %llx \n offset : %llx\n",
          dynstr_header->sh_size, dynstr_header->sh_entsize, dynstr_header->sh_offset);
     for (int i = 0; i < rela_plt_header->sh_size / rela_plt_header->sh_entsize; ++i) {
-        Elf64_Rela *rel_ent = rela_plt_tab+i;
+        Elf64_Rela *rel_ent = rela_plt_tab + i;
         unsigned ndx = ELF_R_SYM(rel_ent->r_info);
         char *syn = dynstr + dynsymtab[ndx].st_name;
         //LOGD("%d %s %lx\n", ndx, syn, rel_ent->r_offset);
@@ -180,3 +186,4 @@ int got_hook_ioctl() {
     char *target_function_name = "ioctl";
     got_hook(lib_binder_path, target_function_name, ioctl, new_ioctl);
 }
+
