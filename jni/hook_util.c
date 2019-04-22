@@ -28,7 +28,7 @@ int new_ioctl(int __fd, unsigned long int __request, void *arg) {
             binder_size_t already_got_size = tmp->read_consumed;
             void *pret = 0;
             while (already_got_size < read_size) {//循环处理read_buffer中的每一个命令
-                pret = (uint32_t *) (tmp->read_buffer + already_got_size);
+                pret = (uint32_t * )(tmp->read_buffer + already_got_size);
                 uint32_t cmd = *(uint32_t *) pret;//获得命令码
                 pret += sizeof(uint32_t);
                 binder_size_t size = _IOC_SIZE(cmd);  //从命令参数中解析出用户数据大小
@@ -60,7 +60,7 @@ int new_ioctl(int __fd, unsigned long int __request, void *arg) {
             binder_size_t already_got_size = tmp->write_consumed;
             void *pret = 0;
             while (already_got_size < read_size) {//循环处理read_buffer中的每一个命令
-                pret = (uint32_t *) (tmp->write_buffer + already_got_size);
+                pret = (uint32_t * )(tmp->write_buffer + already_got_size);
                 uint32_t cmd = *(uint32_t *) pret;//获得命令码
                 pret += sizeof(uint32_t);
                 binder_size_t size = _IOC_SIZE(cmd);  //从命令参数中解析出用户数据大小
@@ -152,7 +152,7 @@ int got_hook(char *path, char *target_func_name, int *old_func, void *new_func) 
         if (strcmp(target_func_name, syn) == 0) {
             //LOGD("ndx = %d, str = %s  i = %d \n", ndx, dynstr + dynsymtab[ndx].st_name, i);
             result_offset = rela_plt_tab[i].r_offset;
-            uint64_t target_func_addr = (uint64_t) (result_offset + bias);
+            uint64_t target_func_addr = (uint64_t)(result_offset + bias);
             if (*(long *) target_func_addr == old_func) {
                 //备份原来的ioctl
                 old_ioctl = old_func;

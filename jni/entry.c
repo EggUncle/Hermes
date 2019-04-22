@@ -5,6 +5,6 @@
 
 #include "include/hook_util.h"
 
-void hook_entry(){
+void hook_entry() {
     got_hook_ioctl();
 }

@@ -62,7 +62,7 @@ int parse_binder_data(struct binder_transaction_data *transaction_data) {
     LOGE("PID = %d, code = %d, dump name : %s , pname size is %d, data size is %lld , target is %llx  %llx offset is %lx\n",
          transaction_data->sender_pid, transaction_data->code, h_data->str, strlen(h_data->str),
          transaction_data->data_size, &transaction_data->target.handle,
-         &transaction_data->target.ptr,transaction_data->data.ptr.offsets);
+         &transaction_data->target.ptr, transaction_data->data.ptr.offsets);
     hex_data_clean(h_data);
     hex_data_init(h_data, len);
     hexdump(_data, len, h_data, DUMP_ALL);

@@ -39,6 +39,6 @@ Elf_Shdr *parse_target_table_data(char *shstrtab_content, FILE *elf_file, Elf_Eh
                                   char *target_tab_name);
 
 long get_segment_base_address(int fd, long base_addr, int phnum, size_t phsize,
-                               unsigned long phdr_addr);
+                              unsigned long phdr_addr);
 
 long get_libs_addr(pid_t pid, char *lib_name);
