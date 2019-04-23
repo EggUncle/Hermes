@@ -19,17 +19,17 @@ struct hex_data {
     char *str;
 };
 
-void hex_data_init(struct hex_data *data, int length) {
+static void hex_data_init(struct hex_data *data, int length) {
     data->hex = calloc(1, 2 * length * sizeof(char) + 1);
     data->str = calloc(1, length * sizeof(char) + 1);
 }
 
-void hex_data_clean(struct hex_data *data) {
+static void hex_data_clean(struct hex_data *data) {
     free(data->hex);
     free(data->str);
 }
 
-int hexdump(binder_uintptr_t binder_data, binder_size_t len, struct hex_data *h_data,
+static int hexdump(binder_uintptr_t binder_data, binder_size_t len, struct hex_data *h_data,
             int dump_all) {
     char *data = (char *) binder_data;
     char tmp_str[1];
@@ -62,7 +62,7 @@ int parse_binder_data(struct binder_transaction_data *transaction_data) {
     LOGE("PID = %d, code = %d, dump name : %s , pname size is %d, data size is %lld , target is %llx  %llx offset is %lx\n",
          transaction_data->sender_pid, transaction_data->code, h_data->str, strlen(h_data->str),
          transaction_data->data_size, &transaction_data->target.handle,
-         &transaction_data->target.ptr, transaction_data->data.ptr.offsets);
+         &transaction_data->target.ptr, transaction_data->data_offsets);
     hex_data_clean(h_data);
     hex_data_init(h_data, len);
     hexdump(_data, len, h_data, DUMP_ALL);
