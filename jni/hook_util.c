@@ -59,7 +59,7 @@ int new_ioctl(int __fd, unsigned long int __request, void *arg) {
         if (write_size > 0) {
             binder_size_t already_got_size = tmp->write_consumed;
             void *pret = 0;
-            while (already_got_size < read_size) {//循环处理read_buffer中的每一个命令
+            while (already_got_size < write_size) {//循环处理write_buffer中的每一个命令
                 pret = (uint32_t * )(tmp->write_buffer + already_got_size);
                 uint32_t cmd = *(uint32_t *) pret;//获得命令码
                 pret += sizeof(uint32_t);
